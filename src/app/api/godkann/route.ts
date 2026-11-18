@@ -18,13 +18,13 @@ export async function POST(req: Request): Promise<Response> {
   const tolkat = beslut.safeParse(await req.json());
   if (!tolkat.success) return Response.json({ fel: "Ogiltigt beslut" }, { status: 400 });
 
-  const arende = lasArende(tolkat.data.id);
+  const arende = await lasArende(tolkat.data.id);
   if (!arende) return Response.json({ fel: "Ärendet finns inte" }, { status: 404 });
 
   arende.svar = tolkat.data.svar ?? arende.svar;
   arende.status = tolkat.data.beslut === "skicka" ? "skickat" : "avvisat";
   arende.beslutAv = anvandare;
   arende.uppdaterad = new Date().toISOString();
-  sparaArende(arende);
+  await sparaArende(arende);
   return Response.json(arende);
 }

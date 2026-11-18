@@ -6,20 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node scripts/seed.mjs",
-    "anvandare": "node scripts/anvandare.mjs"
+    "anvandare": "node scripts/anvandare.mjs",
+    "db:setup": "node scripts/db-setup.mjs",
+    "db:aterstall": "node scripts/db-setup.mjs --aterstall"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.105",
     "ai": "^7.0.173",
-    "better-sqlite3": "^13.2.0",
     "next": "^16.4.6",
+    "postgres": "^4.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

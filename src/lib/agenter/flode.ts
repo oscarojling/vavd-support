@@ -79,6 +79,6 @@ export async function hantera(
     arende.status = "skickat";
     arende.autoskickat = true;
   }
-  if (spara) sparaArende(arende);
+  if (spara) await sparaArende(arende);
   return arende;
 }

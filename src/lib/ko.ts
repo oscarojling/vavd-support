@@ -1,79 +1,59 @@
 import { hantera } from "./agenter/flode";
-import { hittaMeddelande, lasArende } from "./lagring";
-import type { Handelse, Kostatus } from "./typer";
+import { iBakgrunden } from "./bakgrund";
+import { db } from "./db";
+import { hittaMeddelande, JOBB_MAX_MINUTER } from "./lagring";
+import type { Handelse } from "./typer";
 
-// Kön som kör agenterna i bakgrunden. Ligger på globalThis så att den överlever
-// omladdningar av koden i dev-läge.
+// Kön ligger i databasen (kolumnen meddelanden.ko), så den fungerar även när Vercel
+// kör varje anrop i en ny instans. Varje gång inkorgen hämtas, eller ett meddelande
+// läggs i kön, startas upp till SAMTIDIGA väntande jobb i bakgrunden.
 const SAMTIDIGA = 2;
 
-type Jobb = { logg: Handelse[]; klar: boolean };
-type Kostate = {
-  vantande: string[];
-  jobb: Map<string, Jobb>;
-  aktiva: number;
-  kanda: Set<string> | null;
-};
-
-const g = globalThis as unknown as { __vavdKo?: Kostate };
-const state: Kostate = (g.__vavdKo ??= { vantande: [], jobb: new Map(), aktiva: 0, kanda: null });
-
-export function koa(id: string): void {
-  const jobb = state.jobb.get(id);
-  if (state.vantande.includes(id) || (jobb && !jobb.klar)) return;
-  state.vantande.push(id);
-  starta();
+export async function koa(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db()`
+    UPDATE meddelanden SET ko = 'i_ko', ko_startad = NULL, logg = '[]'
+    WHERE id IN ${db()(ids)}
+      AND (ko IS NULL OR (ko = 'arbetar' AND ko_startad < now() - make_interval(mins => ${JOBB_MAX_MINUTER})))`;
 }
 
-function starta(): void {
-  while (state.aktiva < SAMTIDIGA && state.vantande.length > 0) {
-    const id = state.vantande.shift()!;
-    state.aktiva++;
-    kor(id).finally(() => {
-      state.aktiva--;
-      starta();
-    });
-  }
+export async function driv(): Promise<void> {
+  const sql = db();
+  await sql`
+    UPDATE meddelanden
+    SET ko = NULL, logg = logg || ${sql.json([{ typ: "fel", text: "Körningen avbröts innan den blev klar. Kör om." }])}
+    WHERE ko = 'arbetar' AND ko_startad < now() - make_interval(mins => ${JOBB_MAX_MINUTER})`;
+
+  const [{ arbetar }] = await sql<{ arbetar: number }[]>`
+    SELECT count(*)::int AS arbetar FROM meddelanden WHERE ko = 'arbetar'`;
+  const lediga = SAMTIDIGA - arbetar;
+  if (lediga <= 0) return;
+
+  const tagna = await sql<{ id: string }[]>`
+    UPDATE meddelanden SET ko = 'arbetar', ko_startad = now()
+    WHERE id IN (
+      SELECT id FROM meddelanden WHERE ko = 'i_ko' ORDER BY id LIMIT ${lediga} FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id`;
+  for (const { id } of tagna) iBakgrunden(() => kor(id));
 }
 
 async function kor(id: string): Promise<void> {
-  const jobb: Jobb = { logg: [], klar: false };
-  state.jobb.set(id, jobb);
+  const sql = db();
+  let kedja = Promise.resolve();
+  const logga = (h: Handelse) => {
+    kedja = kedja.then(async () => {
+      await sql`UPDATE meddelanden SET logg = logg || ${sql.json([h])} WHERE id = ${id}`;
+    });
+  };
   try {
-    const meddelande = hittaMeddelande(id);
+    const meddelande = await hittaMeddelande(id);
     if (!meddelande) throw new Error("Meddelandet finns inte längre");
-    await hantera(meddelande, (h) => jobb.logg.push(h));
+    await hantera(meddelande, logga);
   } catch (fel) {
-    jobb.logg.push({ typ: "fel", text: (fel as Error).message });
+    logga({ typ: "fel", text: (fel as Error).message });
   } finally {
-    jobb.klar = true;
+    await kedja.catch(() => {});
+    await sql`UPDATE meddelanden SET ko = NULL, ko_startad = NULL WHERE id = ${id}`;
   }
-}
-
-// Meddelanden som dyker upp i inkorg/ efter att servern startat (t.ex. från en
-// mejl-webhook) körs automatiskt. De som redan låg där vid start körs bara när
-// du ber om det, så att du inte förbrukar API-krediter av misstag.
-export function upptackNya(ids: string[]): void {
-  if (!state.kanda) {
-    state.kanda = new Set(ids);
-    return;
-  }
-  for (const id of ids) {
-    if (state.kanda.has(id)) continue;
-    state.kanda.add(id);
-    if (!lasArende(id)) koa(id);
-  }
-}
-
-export function markeraKand(id: string): void {
-  state.kanda?.add(id);
-}
-
-export function kostatus(id: string): Kostatus {
-  if (state.vantande.includes(id)) return "i_ko";
-  const jobb = state.jobb.get(id);
-  return jobb && !jobb.klar ? "arbetar" : null;
-}
-
-export function logg(id: string): Handelse[] {
-  return state.jobb.get(id)?.logg ?? [];
 }

@@ -1,11 +1,10 @@
-import Database from "better-sqlite3";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { tool } from "ai";
 import { z } from "zod";
+import { db } from "@/lib/db";
 
 const KODMAPP = path.join(process.cwd(), "butik");
-const DB = path.join(process.cwd(), "data", "butik.db");
 
 function sakerSokvag(filnamn: string): string {
   const sokvag = path.resolve(KODMAPP, filnamn);
@@ -17,10 +16,6 @@ function sakerSokvag(filnamn: string): string {
 
 function filer(): string[] {
   return readdirSync(KODMAPP).filter((f) => statSync(path.join(KODMAPP, f)).isFile()).sort();
-}
-
-function lasbarDatabas() {
-  return new Database(DB, { readonly: true, fileMustExist: true });
 }
 
 export function listaFiler(): string {
@@ -47,35 +42,42 @@ export function sokIKod(sokord: string): string {
   return traffar.join("\n") || "Inga träffar.";
 }
 
-export function databasSchema(): string {
-  const db = lasbarDatabas();
-  try {
-    const rader = db.prepare("SELECT sql FROM sqlite_master WHERE type='table'").all() as { sql: string }[];
-    return rader.map((r) => r.sql).join("\n");
-  } finally {
-    db.close();
-  }
+export async function databasSchema(): Promise<string> {
+  const kolumner = await db()<{ tabell: string; kolumn: string; typ: string }[]>`
+    SELECT table_name AS tabell, column_name AS kolumn, data_type AS typ
+    FROM information_schema.columns WHERE table_schema = 'butik'
+    ORDER BY table_name, ordinal_position`;
+  const tabeller = new Map<string, string[]>();
+  for (const k of kolumner) tabeller.set(k.tabell, [...(tabeller.get(k.tabell) ?? []), `${k.kolumn} ${k.typ}`]);
+  return [...tabeller].map(([t, k]) => `${t} (${k.join(", ")})`).join("\n");
 }
 
-export function korSql(sql: string): string {
-  const fraga = sql.trim().replace(/;\s*$/, "");
-  if (!/^(select|with)\b/i.test(fraga) || fraga.includes(";")) {
-    return "Fel: bara en enskild SELECT-fråga är tillåten.";
-  }
-  const db = lasbarDatabas();
-  try {
-    const rader = db.prepare(fraga).all() as Record<string, unknown>[];
-    if (rader.length === 0) return "Inga rader.";
-    const kolumner = Object.keys(rader[0]);
-    return [kolumner.join(" | "), ...rader.slice(0, 50).map((r) => kolumner.map((k) => String(r[k])).join(" | "))].join("\n");
-  } finally {
-    db.close();
-  }
+// Agentens SQL körs i en skrivskyddad transaktion där bara butikens tabeller syns.
+// Hänvisningar till andra scheman (appens egna tabeller, systemtabeller) stoppas.
+const FORBJUDET = /\b(public|pg_catalog|information_schema|pg_toast)\s*\.|\bpg_\w+|\b(set_config|current_setting|dblink|lo_\w+)\s*\(/i;
+
+function formatera(varde: unknown): string {
+  if (varde instanceof Date) return varde.toISOString().slice(0, 10);
+  return String(varde);
 }
 
-function sakert(fn: () => string): string {
+export async function korSql(fraga: string): Promise<string> {
+  const sql = fraga.trim().replace(/;\s*$/, "");
+  if (!/^(select|with)\b/i.test(sql) || sql.includes(";")) return "Fel: bara en enskild SELECT-fråga är tillåten.";
+  if (FORBJUDET.test(sql)) return "Fel: bara butikens tabeller får läsas.";
+  const rader = await db().begin("read only", async (tx) => {
+    await tx`SET LOCAL search_path TO butik`;
+    await tx`SET LOCAL statement_timeout = '5s'`;
+    return tx.unsafe(sql);
+  }) as unknown as Record<string, unknown>[];
+  if (rader.length === 0) return "Inga rader.";
+  const kolumner = Object.keys(rader[0]);
+  return [kolumner.join(" | "), ...rader.slice(0, 50).map((r) => kolumner.map((k) => formatera(r[k])).join(" | "))].join("\n");
+}
+
+async function sakert(fn: () => string | Promise<string>): Promise<string> {
   try {
-    return fn();
+    return await fn();
   } catch (fel) {
     return `Fel: ${(fel as Error).message}`;
   }
@@ -116,7 +118,7 @@ export function skapaVerktyg(logga: (namn: string, indata: string) => void) {
       },
     }),
     kor_sql: tool({
-      description: "Kör en SELECT-fråga mot butikens SQLite-databas. Bara läsning är tillåten.",
+      description: "Kör en SELECT-fråga mot butikens Postgres-databas (tabellerna kunder, ordrar, orderrader, rabattkoder, anvanda_koder). Bara läsning är tillåten.",
       inputSchema: z.object({ sql: z.string() }),
       execute: async ({ sql }) => {
         logga("kor_sql", sql);
