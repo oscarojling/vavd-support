@@ -1,0 +1,125 @@
+:root {
+  --paper: #f6f2ea;
+  --ink: #1f1d1a;
+  --muted: #6b665d;
+  --rule: #d8d1c3;
+  --accent: #7a3b2e;
+  --ok: #3b6d11;
+  --warn: #854f0b;
+  --danger: #a32d2d;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.6 var(--font-body); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 500; margin: 0; }
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; margin: 24px 0 8px; }
+
+button {
+  font: inherit; background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
+  padding: 6px 14px; cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+button.sekundar { background: transparent; color: var(--ink); }
+input, select, textarea {
+  font: inherit; width: 100%; background: #fffdf8; border: 1px solid var(--rule); padding: 6px 8px; color: var(--ink);
+}
+pre, code { font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; }
+
+.sida { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+.sidhuvud { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--ink); padding-bottom: 16px; }
+.underrubrik, .meta { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+.knappar { display: flex; gap: 8px; margin-top: 12px; }
+
+.nytt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+.nytt label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.nytt .bred { grid-column: 1 / -1; }
+.nytt button { justify-self: start; }
+
+.layout { display: grid; grid-template-columns: 340px 1fr; }
+.inkorg { list-style: none; margin: 0; padding: 0; border-right: 1px solid var(--rule); }
+.post {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left;
+  background: transparent; color: var(--ink); border: 0; border-bottom: 1px solid var(--rule); padding: 12px 16px 12px 0;
+}
+.post.vald { background: #ece6da; padding-left: 12px; }
+.amne { font-family: var(--font-display); font-size: 16px; }
+
+.status { font-size: 12px; color: var(--muted); }
+.status.att_godkanna { color: var(--warn); }
+.status.skickat { color: var(--ok); }
+.status.behover_manniska, .status.avvisat { color: var(--danger); }
+.status.kor { color: var(--accent); }
+
+.detalj { padding: 24px 0 24px 32px; }
+.tom { color: var(--muted); }
+blockquote { margin: 16px 0; padding-left: 16px; border-left: 2px solid var(--ink); font-family: var(--font-display); font-size: 17px; }
+
+.logg ol { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }
+.logg li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.logg .verktyg { padding-left: 20px; color: var(--muted); font-size: 13px; }
+.logg .verktyg code { margin-left: 8px; }
+.logg details { margin-top: 4px; }
+.logg pre { background: #fffdf8; border: 1px solid var(--rule); padding: 8px; margin: 4px 0 0; }
+
+.resultat { border-top: 1px solid var(--ink); margin-top: 24px; }
+.resultat .svar { background: #fffdf8; border: 1px solid var(--rule); padding: 12px; font-family: var(--font-body); font-size: 15px; }
+.granskning ul { margin: 0; padding-left: 18px; color: var(--danger); }
+.underlag { margin-top: 16px; color: var(--muted); }
+.underlag pre { color: var(--ink); }
+.felruta { color: var(--danger); font-size: 13px; }
+
+button.liten { padding: 3px 10px; font-size: 13px; }
+.status.ny { color: var(--muted); }
+
+.flikar { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-top: 8px; }
+.flikar button {
+  background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid transparent;
+  padding: 10px 14px; margin-bottom: -1px;
+}
+.flikar button.aktiv { color: var(--ink); border-bottom-color: var(--ink); }
+.flikar .antal { margin-left: 6px; font-size: 12px; color: var(--muted); }
+
+.detaljhuvud { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+
+.trad { display: flex; gap: 10px; margin: 16px 0; }
+.trad .avatar {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  border: 1px solid var(--rule); background: #fffdf8; font-family: var(--font-display);
+}
+.trad.agent .avatar { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.trad .tradnamn { font-weight: 500; font-size: 14px; }
+.trad p { margin: 2px 0 0; white-space: pre-wrap; }
+.svarstrad { border-left: 1px solid var(--rule); margin-left: 15px; padding-left: 16px; }
+
+.logg { margin-top: 16px; }
+.logg > summary { cursor: pointer; font-family: var(--font-display); font-size: 16px; margin-bottom: 8px; }
+
+.testvy { padding: 16px 0; max-width: 900px; }
+.bekrafta { border: 1px solid var(--ink); padding: 12px 16px; margin-top: 12px; }
+.bekrafta p { margin: 0; }
+.resultatrubrik { margin-top: 24px; }
+.matare { display: flex; height: 6px; border: 1px solid var(--rule); margin: 8px 0 16px; }
+.matare .ratt { background: var(--ok); }
+.matare .fel { background: var(--danger); }
+.testlista { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }
+.testlista > li { border-bottom: 1px solid var(--rule); padding: 8px 0; }
+.testlista summary { cursor: pointer; display: flex; gap: 12px; align-items: baseline; }
+.testlista .markering { width: 36px; flex: none; font-weight: 500; }
+.testlista .ratt .markering { color: var(--ok); }
+.testlista .fel .markering { color: var(--danger); }
+.testlista .testid { width: 220px; flex: none; font-family: var(--font-mono); font-size: 13px; }
+.testlista .kommentar { color: var(--muted); font-size: 14px; }
+.testdetalj { padding: 4px 0 8px 48px; }
+.testdetalj p { margin: 0; }
+
+.inloggad { align-self: center; font-size: 13px; color: var(--muted); }
+button.lank { background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; font-size: 13px; }
+.inloggning { max-width: 360px; margin: 12vh auto 0; display: flex; flex-direction: column; gap: 14px; }
+.inloggning h1 { border-bottom: 1px solid var(--ink); padding-bottom: 12px; }
+.inloggning label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.inloggning button { align-self: flex-start; }

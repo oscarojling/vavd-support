@@ -1,0 +1,27 @@
+{
+  "_kommentar": "Storleksguide för Vävd. 'passform' säger hur modellen sitter jämfört med vår standardtabell.",
+  "standardtabell_cm_brostvidd": {"XS": 84, "S": 90, "M": 96, "L": 102, "XL": 108},
+  "modeller": {
+    "Fjällgren jacka": {
+      "kategori": "jackor",
+      "passform": "liten",
+      "rad": "Välj en storlek större än vanligt, särskilt om du ska ha tjock tröja under."
+    },
+    "Lina jeans": {
+      "kategori": "byxor",
+      "passform": "egen_tabell",
+      "rad": "Följer midjemått i tum, inte S/M/L. Mät midjan och välj enligt tabellen.",
+      "tabell_midja_cm_till_tum": {"66": 26, "71": 28, "76": 30, "81": 32, "86": 34}
+    },
+    "Bas t-shirt": {
+      "kategori": "överdelar",
+      "passform": "normal",
+      "rad": "Sann till storleken. Krymper ca 3 % vid 60-graderstvätt."
+    },
+    "Ö bikini": {
+      "kategori": "badkläder",
+      "passform": "stor",
+      "rad": "Välj en storlek mindre än vanligt."
+    }
+  }
+}
