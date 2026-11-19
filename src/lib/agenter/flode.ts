@@ -8,18 +8,9 @@ import { utred } from "./utredaren";
 const MAX_FORSOK = 2;
 
 // Kundsvar i dessa kategorier skickas utan ditt godkännande, om Granskaren godkänt dem
-// och Utredaren inte saknade något. Returer, rabatter m.m. godkänner du alltid själv.
+// och bedömt att de är säkra att skicka automatiskt. Returer, rabatter m.m. godkänner du
+// alltid själv.
 const AUTOSKICKA_KUNDKATEGORIER: Sortering["kategori"][] = ["orderstatus"];
-
-function inget_saknas(fakta: string): boolean {
-  const saknas = fakta.split(/SAKNAS:/i)[1];
-  if (saknas === undefined) return false;
-  return saknas
-    .split("\n")
-    .map((r) => r.replace(/^[\s\-*]+/, "").trim())
-    .filter(Boolean)
-    .every((r) => /^"?inget"?\.?$/i.test(r));
-}
 
 export async function hantera(
   m: Meddelande,
@@ -52,7 +43,13 @@ export async function hantera(
 
     bedomning = await granska(m, sortering, fakta, svar);
     if (bedomning.godkand) {
-      skicka({ typ: "steg", agent: "Granskaren", text: "Godkänt" });
+      const auto = sortering.avsandare === "kund" && AUTOSKICKA_KUNDKATEGORIER.includes(sortering.kategori);
+      skicka({
+        typ: "steg",
+        agent: "Granskaren",
+        text: auto ? (bedomning.sakerAttSkicka ? "Godkänt – säkert att skicka automatiskt" : "Godkänt – men en människa bör läsa först") : "Godkänt",
+        detalj: auto ? bedomning.motivering : undefined,
+      });
       break;
     }
     aterkoppling = bedomning.aterkoppling;
@@ -75,7 +72,7 @@ export async function hantera(
     arende.status = "behover_manniska";
   } else if (sortering.avsandare === "personal") {
     arende.status = "skickat";
-  } else if (AUTOSKICKA_KUNDKATEGORIER.includes(sortering.kategori) && inget_saknas(fakta)) {
+  } else if (AUTOSKICKA_KUNDKATEGORIER.includes(sortering.kategori) && bedomning!.sakerAttSkicka) {
     arende.status = "skickat";
     arende.autoskickat = true;
   }

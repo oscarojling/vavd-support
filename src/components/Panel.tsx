@@ -262,7 +262,13 @@ function Kundsvar({ arende, uppdatera }: { arende: Arende; uppdatera: () => Prom
         </p>
       )}
       {arende.autoskickat && (
-        <p className="meta">Skickades automatiskt: enkel orderstatusfråga som Granskaren godkände.</p>
+        <p className="meta">
+          Skickades automatiskt: orderstatusfråga som Granskaren bedömde som säker.
+          {arende.bedomning.motivering ? ` ${arende.bedomning.motivering}` : ""}
+        </p>
+      )}
+      {!arende.autoskickat && arende.status === "att_godkanna" && arende.sortering.kategori === "orderstatus" && arende.bedomning.motivering && (
+        <p className="meta">Skickades inte automatiskt: {arende.bedomning.motivering}</p>
       )}
       {kanAndras ? (
         <>

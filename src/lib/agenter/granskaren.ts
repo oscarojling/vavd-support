@@ -20,13 +20,25 @@ Underkänn svaret om något av följande gäller:
 8. Frågan är för vag för att besvaras, men svaret gissar istället för att fråga vad som menas.
 
 Var konkret i återkopplingen. Säg om felet ligger i utredningen (fel/saknade fakta)
-eller i texten (skribenten).`;
+eller i texten (skribenten).
+
+Bedöm också om svaret är SÄKERT ATT SKICKA AUTOMATISKT till en kund, utan att en människa läser det
+först. Svara ja bara om allt detta gäller:
+- svaret är godkänt enligt reglerna ovan,
+- det bara innehåller uppgifter om avsändarens EGEN order, med stöd i FAKTA,
+- det inte nekar att lämna ut något, och inte gäller en order som tillhör någon annan,
+- det inte lovar pengar, återbetalning, rabatt, kompensation eller undantag,
+- inget som kunden faktiskt frågade efter saknas.
+Att något kunden inte frågade efter saknas, t.ex. leveransdatum för en order som ännu inte har
+levererats, är inget hinder. Om avsändaren är personal: svara nej (det används inte).`;
 
 const schema = z.object({
   godkand: z.boolean(),
   felHos: z.enum(["ingen", "utredaren", "skribenten"]),
   problem: z.array(z.string()),
   aterkoppling: z.string().describe("Vad som ska rättas, tom om godkänd"),
+  sakerAttSkicka: z.boolean().describe("Säkert att skicka automatiskt till kunden utan mänsklig granskning"),
+  motivering: z.string().describe("En mening om varför svaret är eller inte är säkert att skicka automatiskt"),
 });
 
 export async function granska(m: Meddelande, s: Sortering, fakta: string, svar: string): Promise<Bedomning> {

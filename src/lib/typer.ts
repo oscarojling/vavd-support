@@ -21,6 +21,8 @@ export type Bedomning = {
   felHos: "ingen" | "utredaren" | "skribenten";
   problem: string[];
   aterkoppling: string;
+  sakerAttSkicka?: boolean;
+  motivering?: string;
 };
 
 export type Arendestatus = "att_godkanna" | "skickat" | "behover_manniska" | "avvisat";
